@@ -41,7 +41,7 @@ else
 	endif
 	ARCHIVE_CMD := tar czf
 	ARCHIVE_EXTENSION := tar.gz
-	TARGET := mklfs
+	TARGET := mklfs dumplfs
 endif
 
 OBJ             := mklfs.o \
@@ -54,12 +54,16 @@ VERSION ?= $(shell git describe --always)
 
 all: $(TARGET)
 
-$(TARGET):
-	@echo "Building mklfs ..."
-	$(CC) $(TARGET_CFLAGS) -c lfs/lfs.c -o lfs/lfs.o
-	$(CC) $(TARGET_CFLAGS) -c lfs/lfs_util.c -o lfs/lfs_util.o
-	$(CC) $(TARGET_CFLAGS) -c mklfs.c -o mklfs.o
-	$(CC) $(TARGET_CFLAGS) -o $(TARGET) $(OBJ) $(TARGET_LDFLAGS)
+%.o: %.c
+	$(CC) $(TARGET_CFLAGS) -c $< -o $@
+	
+mklfs: lfs/lfs.o lfs/lfs_util.o mklfs.o
+	$(CC) $(TARGET_CFLAGS) -o $@ $^
+
+dumplfs: lfs/lfs.o lfs/lfs_util.o dumplfs.o
+	$(CC) $(TARGET_CFLAGS) -o $@ $^
+
+
 
 clean:
 	@rm -f *.o
