@@ -17,8 +17,20 @@ extern "C"
 
 
 // Config options
-#ifndef LFS_EMUBD_ERASE_VALUE
-#define LFS_EMUBD_ERASE_VALUE 0x00
+#ifndef LFS_EMUBD_READ_SIZE
+#define LFS_EMUBD_READ_SIZE 1
+#endif
+
+#ifndef LFS_EMUBD_PROG_SIZE
+#define LFS_EMUBD_PROG_SIZE 1
+#endif
+
+#ifndef LFS_EMUBD_ERASE_SIZE
+#define LFS_EMUBD_ERASE_SIZE 512
+#endif
+
+#ifndef LFS_EMUBD_TOTAL_SIZE
+#define LFS_EMUBD_TOTAL_SIZE 524288
 #endif
 
 
@@ -32,10 +44,6 @@ typedef struct lfs_emubd {
         uint64_t prog_count;
         uint64_t erase_count;
     } stats;
-
-    struct {
-        lfs_block_t blocks[4];
-    } history;
 
     struct {
         uint32_t read_size;

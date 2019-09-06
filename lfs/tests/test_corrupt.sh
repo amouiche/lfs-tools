@@ -1,7 +1,5 @@
 #!/bin/bash
 set -eu
-export TEST_FILE=$0
-trap 'export TEST_LINE=$LINENO' DEBUG
 
 echo "=== Corrupt tests ==="
 
@@ -9,7 +7,7 @@ NAMEMULT=64
 FILEMULT=1
 
 lfs_mktree() {
-scripts/test.py ${1:-} << TEST
+tests/test.py ${1:-} << TEST
     lfs_format(&lfs, &cfg) => 0;
 
     lfs_mount(&lfs, &cfg) => 0;
@@ -25,22 +23,22 @@ scripts/test.py ${1:-} << TEST
             buffer[j+$NAMEMULT+1] = '0'+i;
         }
         buffer[2*$NAMEMULT+1] = '\0';
-        lfs_file_open(&lfs, &file, (char*)buffer,
+        lfs_file_open(&lfs, &file[0], (char*)buffer,
                 LFS_O_WRONLY | LFS_O_CREAT) => 0;
         
-        lfs_size_t size = $NAMEMULT;
+        size = $NAMEMULT;
         for (int j = 0; j < i*$FILEMULT; j++) {
-            lfs_file_write(&lfs, &file, buffer, size) => size;
+            lfs_file_write(&lfs, &file[0], buffer, size) => size;
         }
 
-        lfs_file_close(&lfs, &file) => 0;
+        lfs_file_close(&lfs, &file[0]) => 0;
     }
     lfs_unmount(&lfs) => 0;
 TEST
 }
 
 lfs_chktree() {
-scripts/test.py ${1:-} << TEST
+tests/test.py ${1:-} << TEST
     lfs_mount(&lfs, &cfg) => 0;
     for (int i = 1; i < 10; i++) {
         for (int j = 0; j < $NAMEMULT; j++) {
@@ -55,16 +53,15 @@ scripts/test.py ${1:-} << TEST
             buffer[j+$NAMEMULT+1] = '0'+i;
         }
         buffer[2*$NAMEMULT+1] = '\0';
-        lfs_file_open(&lfs, &file, (char*)buffer, LFS_O_RDONLY) => 0;
+        lfs_file_open(&lfs, &file[0], (char*)buffer, LFS_O_RDONLY) => 0;
         
-        lfs_size_t size = $NAMEMULT;
+        size = $NAMEMULT;
         for (int j = 0; j < i*$FILEMULT; j++) {
-            uint8_t rbuffer[1024];
-            lfs_file_read(&lfs, &file, rbuffer, size) => size;
+            lfs_file_read(&lfs, &file[0], rbuffer, size) => size;
             memcmp(buffer, rbuffer, size) => 0;
         }
 
-        lfs_file_close(&lfs, &file) => 0;
+        lfs_file_close(&lfs, &file[0]) => 0;
     }
     lfs_unmount(&lfs) => 0;
 TEST
@@ -74,25 +71,24 @@ echo "--- Sanity check ---"
 rm -rf blocks
 lfs_mktree
 lfs_chktree
-BLOCKS="$(ls blocks | grep -vw '[01]')"
 
 echo "--- Block corruption ---"
-for b in $BLOCKS
+for i in {0..33}
 do 
     rm -rf blocks
     mkdir blocks
-    ln -s /dev/zero blocks/$b
+    ln -s /dev/zero blocks/$(printf '%x' $i)
     lfs_mktree
     lfs_chktree
 done
 
 echo "--- Block persistance ---"
-for b in $BLOCKS
+for i in {0..33}
 do 
     rm -rf blocks
     mkdir blocks
     lfs_mktree
-    chmod a-w blocks/$b || true
+    chmod a-w blocks/$(printf '%x' $i)
     lfs_mktree
     lfs_chktree
 done
@@ -100,7 +96,7 @@ done
 echo "--- Big region corruption ---"
 rm -rf blocks
 mkdir blocks
-for i in {2..512}
+for i in {2..255}
 do
     ln -s /dev/zero blocks/$(printf '%x' $i)
 done
@@ -110,11 +106,12 @@ lfs_chktree
 echo "--- Alternating corruption ---"
 rm -rf blocks
 mkdir blocks
-for i in {2..1024..2}
+for i in {2..511..2}
 do
     ln -s /dev/zero blocks/$(printf '%x' $i)
 done
 lfs_mktree
 lfs_chktree
 
-scripts/results.py
+echo "--- Results ---"
+tests/stats.py

@@ -24,14 +24,8 @@ endif
 ifdef WORD
 override CFLAGS += -m$(WORD)
 endif
-ifdef TRACE
-override CFLAGS += -DLFS_YES_TRACE
-endif
 override CFLAGS += -I.
-override CFLAGS += -std=c99 -Wall -pedantic
-override CFLAGS += -Wextra -Wshadow -Wjump-misses-init -Wundef
-# Remove missing-field-initializers because of GCC bug
-override CFLAGS += -Wno-missing-field-initializers
+override CFLAGS += -std=c99 -Wall -pedantic -Wshadow -Wunused-parameter
 
 
 all: $(TARGET)
@@ -42,25 +36,13 @@ size: $(OBJ)
 	$(SIZE) -t $^
 
 .SUFFIXES:
-test: \
-	test_format \
-	test_dirs \
-	test_files \
-	test_seek \
-	test_truncate \
-	test_entries \
-	test_interspersed \
-	test_alloc \
-	test_paths \
-	test_attrs \
-	test_move \
-	test_orphan \
-	test_corrupt
+test: test_format test_dirs test_files test_seek test_truncate \
+	test_interspersed test_alloc test_paths test_orphan test_move test_corrupt
 	@rm test.c
 test_%: tests/test_%.sh
 
 ifdef QUIET
-	@./$< | sed -nu '/^[-=]/p'
+	@./$< | sed -n '/^[-=]/p'
 else
 	./$<
 endif
