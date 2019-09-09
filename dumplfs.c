@@ -329,19 +329,5 @@ int main(int argc, char **argv) {
 	}
 
 	err = dump_dir("", dstdir);
-
-#if 0
-	compact(src);
-
-	FILE *img = fopen(dst, "wb+");
-
-	if (!img) {
-		fprintf(stderr, "can't create image file: errno=%d (%s)\r\n", errno, strerror(errno));
-		return -1;
-	}
-
-	fwrite(data, 1, fs_size, img);
-#endif
-
-	return 0;
+	return err;
 }
